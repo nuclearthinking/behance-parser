@@ -80,3 +80,4 @@ def get_data(
     parsed_response = ProjectsResponse.parse_obj(response_data)
     if work := parsed_response.profile.active_section.work:
         return work.projects, work.has_more
+    return [], False

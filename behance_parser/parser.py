@@ -62,7 +62,7 @@ def parse_agency(agency_name: str) -> None:
         )
 
 
-def collect_tasks_for_parisng():
+def collect_tasks_for_parsing():
     agencies = get_all_agencies()
     for agency in agencies:
-        parse_agency(agency)
+        parse_agency(agency.name)

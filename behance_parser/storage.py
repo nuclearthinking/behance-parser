@@ -24,16 +24,8 @@ class Task(Base):
     __tablename__ = "task"
 
     id: int = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
-    agency_id: int = sa.Column(
-        sa.Integer,
-        sa.ForeignKey("agency.id"),
-        nullable=False,
-    )
-    agency: Agency = sa.orm.relationship(
-        "Agency",
-        uselist=False,
-        foreign_keys=[agency_id],
-    )
+    agency_id: int = sa.Column(sa.Integer, sa.ForeignKey("agency.id"), nullable=False)
+    agency: Agency = sa.orm.relationship("Agency", uselist=False, foreign_keys=[agency_id])
     behance_id: int = sa.Column(sa.Integer, nullable=False, unique=True)
     name: str = sa.Column(sa.Text, nullable=False)
     url: str = sa.Column(sa.Text, nullable=False)
@@ -83,6 +75,6 @@ def create_agencies(agencies: list[str]) -> None:
         _get_agency(agency)
 
 
-def get_all_agencies() -> list[str]:
+def get_all_agencies() -> list[Agency]:
     query = sa.select(Agency)
     return db_session.execute(query).unique().scalars().all()

@@ -2,7 +2,7 @@ import logging
 
 import click
 
-from behance_parser.parser import collect_tasks_for_parisng
+from behance_parser.parser import collect_tasks_for_parsing
 from behance_parser.storage import create_agencies
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ def add_agencies(agencies):
 @cli.command(name="collect-tasks")
 def collect_tasks():
     logger.info("Invoked command collect-tasks")
-    collect_tasks_for_parisng()
+    collect_tasks_for_parsing()
 
 
 def process_tasks():
