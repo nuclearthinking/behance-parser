@@ -1,4 +1,3 @@
-import time
 from urllib.parse import urlsplit
 
 import requests
@@ -75,7 +74,7 @@ def get_data(
     headers = {
         "referer": url,
         "cookie": cookie_value,
-        'user-agent': user_agent.get_random_user_agent()
+        "user-agent": user_agent.get_random_user_agent(),
     }
     headers = default_headers | headers
     response = requests.get(
@@ -95,7 +94,7 @@ def load_img(url: str, cookies: list[dict]) -> bytes:
     headers = {
         "referer": "https://www.behance.net/",
         "cookie": cookie_value,
-        "user-agent": user_agent.get_random_user_agent()
+        "user-agent": user_agent.get_random_user_agent(),
     }
     response = requests.get(url, headers=headers)
     return response.content

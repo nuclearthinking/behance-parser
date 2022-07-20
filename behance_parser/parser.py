@@ -3,7 +3,6 @@ import time
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chromium.webdriver import ChromiumDriver
 from webdriver_manager.chrome import ChromeDriverManager
 
 from behance_parser import fetcher, storage

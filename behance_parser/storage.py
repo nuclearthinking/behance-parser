@@ -25,7 +25,9 @@ class Task(Base):
 
     id: int = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
     agency_id: int = sa.Column(sa.Integer, sa.ForeignKey("agency.id"), nullable=False)
-    agency: Agency = sa.orm.relationship("Agency", uselist=False, foreign_keys=[agency_id])
+    agency: Agency = sa.orm.relationship(
+        "Agency", uselist=False, foreign_keys=[agency_id]
+    )
     behance_id: int = sa.Column(sa.Integer, nullable=False, unique=True)
     name: str = sa.Column(sa.Text, nullable=False)
     url: str = sa.Column(sa.Text, nullable=False)
@@ -36,40 +38,38 @@ class Text(Base):
     __tablename__ = "text"
 
     id: int = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
-    task_id: int = sa.Column(sa.Integer, sa.ForeignKey('task.id'), nullable=False)
-    task: 'Task' = sa.orm.relationship('Task', uselist=False, foreign_keys=[task_id])
+    task_id: int = sa.Column(sa.Integer, sa.ForeignKey("task.id"), nullable=False)
+    task: "Task" = sa.orm.relationship("Task", uselist=False, foreign_keys=[task_id])
     text: str = sa.Column(sa.Text, nullable=False)
     uuid: str = sa.Column(sa.Text, nullable=False)
 
-    __table_args__ = (
-        sa.Index('text_task_id__uuid__uidx', task_id, uuid, unique=True),
-    )
+    __table_args__ = (sa.Index("text_task_id__uuid__uidx", task_id, uuid, unique=True),)
 
 
 class Image(Base):
     __tablename__ = "image"
 
     id: int = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
-    task_id: int = sa.Column(sa.Integer, sa.ForeignKey('task.id'), nullable=False)
-    task: 'Task' = sa.orm.relationship('Task', uselist=False, foreign_keys=[task_id])
+    task_id: int = sa.Column(sa.Integer, sa.ForeignKey("task.id"), nullable=False)
+    task: "Task" = sa.orm.relationship("Task", uselist=False, foreign_keys=[task_id])
     image: bytes = sa.Column(sa.BLOB, nullable=False)
     uuid: str = sa.Column(sa.Text, nullable=False)
 
     __table_args__ = (
-        sa.Index('image_task_id__uuid__uidx', task_id, uuid, unique=True),
+        sa.Index("image_task_id__uuid__uidx", task_id, uuid, unique=True),
     )
 
 
 class Video(Base):
     __tablename__ = "video"
     id: int = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
-    task_id: int = sa.Column(sa.Integer, sa.ForeignKey('task.id'), nullable=False)
-    task: 'Task' = sa.orm.relationship('Task', uselist=False, foreign_keys=[task_id])
+    task_id: int = sa.Column(sa.Integer, sa.ForeignKey("task.id"), nullable=False)
+    task: "Task" = sa.orm.relationship("Task", uselist=False, foreign_keys=[task_id])
     link: str = sa.Column(sa.Text, nullable=False)
     uuid: str = sa.Column(sa.Text, nullable=False)
 
     __table_args__ = (
-        sa.Index('video_task_id__uuid__uidx', task_id, uuid, unique=True),
+        sa.Index("video_task_id__uuid__uidx", task_id, uuid, unique=True),
     )
 
 
@@ -139,19 +139,23 @@ def store_image(uuid: str, data: bytes, task: Task) -> None:
 
 
 def is_image_exist(uuid: str, task_id: int) -> bool:
-    query = sa.select(Image).where(sa.and_(
-        Image.uuid == uuid,
-        Image.task_id == task_id,
-    ))
+    query = sa.select(Image).where(
+        sa.and_(
+            Image.uuid == uuid,
+            Image.task_id == task_id,
+        )
+    )
     img = db_session.execute(query).scalar_one_or_none()
     return bool(img)
 
 
 def is_text_exist(uuid: str, task_id: int) -> bool:
-    query = sa.select(Text).where(sa.and_(
-        Text.uuid == uuid,
-        Text.task_id == task_id,
-    ))
+    query = sa.select(Text).where(
+        sa.and_(
+            Text.uuid == uuid,
+            Text.task_id == task_id,
+        )
+    )
     text = db_session.execute(query).scalar_one_or_none()
     return bool(text)
 
@@ -169,24 +173,19 @@ def store_text(uuid: str, text: str, task: Task) -> None:
 
 
 def is_video_exist(uuid: str, task_id: int) -> bool:
-    query = sa.select(Video).where(sa.and_(
-        Video.uuid == uuid,
-        Video.task_id == task_id
-    ))
+    query = sa.select(Video).where(
+        sa.and_(Video.uuid == uuid, Video.task_id == task_id)
+    )
     return db_session.execute(query).scalar_one_or_none()
 
 
 def store_video(uuid: str, link: str, task: Task) -> None:
     if is_video_exist(uuid, task_id=task.id):
         return
-    video = Video(
-        uuid=uuid,
-        link=link,
-        task=task
-    )
+    video = Video(uuid=uuid, link=link, task=task)
     db_session.add(video)
     db_session.commit()
-    logger.info('Stored video link with uuid: %s', uuid)
+    logger.info("Stored video link with uuid: %s", uuid)
 
 
 def set_task_parsing_status(task: Task, is_parsed: bool) -> None:
@@ -196,10 +195,9 @@ def set_task_parsing_status(task: Task, is_parsed: bool) -> None:
 
 
 def get_tasks_by_agency_id(agency_id: int) -> list[Task]:
-    query = sa.select(Task).where(sa.and_(
-        Task.agency_id == agency_id,
-        Task.is_parsed.is_(True)
-    ))
+    query = sa.select(Task).where(
+        sa.and_(Task.agency_id == agency_id, Task.is_parsed.is_(True))
+    )
     return db_session.execute(query).scalars().all()
 
 

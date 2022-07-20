@@ -8,7 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
 
-from behance_parser import storage, parser
+from behance_parser import parser, storage
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,9 @@ def get_page_html(url: str) -> str:
     driver = next(parser.get_driver())
     driver.get(url)
     WebDriverWait(driver, 10).until(
-        ec.presence_of_element_located((By.XPATH, "//div[contains(@class, 'ProjectInfo-container')]"))
+        ec.presence_of_element_located(
+            (By.XPATH, "//div[contains(@class, 'ProjectInfo-container')]")
+        )
     )
     global cookies
     cookies = driver.get_cookies()
@@ -37,11 +39,11 @@ def get_page_html(url: str) -> str:
 
 def _parse_image(tag: Tag, task: storage.Task) -> None:
     img = tag.select_one(IMG_SELECTOR)
-    srcset = img.attrs.get('srcset')
-    sizes = srcset.split(',')
-    higher_size_img_url = sizes[-1].strip().split(' ')[0]
-    file_name = higher_size_img_url.split('/')[-1]
-    uuid = file_name.replace('.jpg', '')
+    srcset = img.attrs.get("srcset")
+    sizes = srcset.split(",")
+    higher_size_img_url = sizes[-1].strip().split(" ")[0]
+    file_name = higher_size_img_url.split("/")[-1]
+    uuid = file_name.replace(".jpg", "")
     if storage.is_image_exist(uuid, task.id):
         return
     img_data = parser.load_img(
@@ -53,7 +55,7 @@ def _parse_image(tag: Tag, task: storage.Task) -> None:
         data=img_data,
         task=task,
     )
-    logger.info('Stored image with uuid: %s', uuid)
+    logger.info("Stored image with uuid: %s", uuid)
     time.sleep(1)
 
 
@@ -63,22 +65,22 @@ def _parse_text(tag: Tag, task: storage.Task) -> None:
     for child in text.contents:
         content = child.text.strip()
         if content:
-            content = content.replace(' ', ' ')
+            content = content.replace(" ", " ")
             extracted_content.append(content)
-    result = '\n'.join(extracted_content)
+    result = "\n".join(extracted_content)
     uuid = hashlib.sha1(result.encode()).hexdigest()
     storage.store_text(
         uuid=uuid,
         text=result,
         task=task,
     )
-    logger.info('Stored text with uuid: %s', uuid)
+    logger.info("Stored text with uuid: %s", uuid)
 
 
 def _parse_video(tag: Tag, task: storage.Task) -> None:
     video_container = tag.select_one(VIDEO_SELECTOR)
-    iframe = video_container.select_one('iframe')
-    url = iframe.attrs.get('src')
+    iframe = video_container.select_one("iframe")
+    url = iframe.attrs.get("src")
     uuid = hashlib.sha1(url.encode()).hexdigest()
     storage.store_video(
         uuid=uuid,
@@ -89,10 +91,10 @@ def _parse_video(tag: Tag, task: storage.Task) -> None:
 
 def parse_project(task: storage.Task) -> None:
     html = get_page_html(task.url)
-    soup = bs4.BeautifulSoup(html, 'html.parser')
+    soup = bs4.BeautifulSoup(html, "html.parser")
     container = soup.select_one(PROJECT_ITEMS)
     if not container:
-        raise ParsingException('Cant find project-modules container')
+        raise ParsingException("Cant find project-modules container")
     content = [i for i in container.contents if isinstance(i, Tag)]
     for tag in content:
         image = tag.select_one(IMG_SELECTOR)
@@ -107,7 +109,7 @@ def parse_project(task: storage.Task) -> None:
         if video:
             _parse_video(tag, task)
             continue
-        logger.warning('Unknown tag found %s', tag)
+        logger.warning("Unknown tag found %s", tag)
     storage.set_task_parsing_status(task, is_parsed=True)
 
 

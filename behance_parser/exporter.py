@@ -32,39 +32,39 @@ def _export_project_data(project: storage.Task, path: Path) -> None:
 
 
 def _export_images(images: list[storage.Image], path: Path) -> None:
-    images_folder = path / 'images'
+    images_folder = path / "images"
     images_folder.mkdir(exist_ok=True)
     for image in images:
-        file_path = images_folder / f'{image.uuid}.jpg'
+        file_path = images_folder / f"{image.uuid}.jpg"
         if file_path.exists():
             continue
-        with open(str(file_path), 'wb') as _img_file:
+        with open(str(file_path), "wb") as _img_file:
             _img_file.write(image.image)
 
 
 def _export_texts(texts: list[storage.Text], path: Path) -> None:
-    file_path = path / 'texts.txt'
+    file_path = path / "texts.txt"
     if file_path.exists():
         os.remove(file_path)
     content = [i.text for i in texts]
-    content = '\n'.join(content)
-    with open(file_path, 'w') as _text_file:
+    content = "\n".join(content)
+    with open(file_path, "w") as _text_file:
         _text_file.write(content)
 
 
 def _export_videos(videos: list[storage.Video], path: Path) -> None:
-    file_path = path / 'videos.txt'
+    file_path = path / "videos.txt"
     if file_path.exists():
         os.remove(file_path)
     links = [i.link for i in videos]
-    links = '\n'.join(links)
-    with open(file_path, 'w') as _links_file:
+    links = "\n".join(links)
+    with open(file_path, "w") as _links_file:
         _links_file.write(links)
 
 
 def _generate_exporting_path(path) -> Path:
     if path is None:
-        return Path(os.getcwd()) / 'behance_parsing_result'
+        return Path(os.getcwd()) / "behance_parsing_result"
     path = Path(path)
     if path.is_absolute():
         return path
