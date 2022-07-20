@@ -1,7 +1,10 @@
+import time
 from urllib.parse import urlsplit
 
 import requests
 from pydantic import BaseModel
+
+from behance_parser.fake_useragent import user_agent
 
 
 def to_lower_camel_case(string: str) -> str:
@@ -51,8 +54,6 @@ default_headers = {
     "sec-fetch-dest": "empty",
     "sec-fetch-mode": "cors",
     "sec-fetch-site": "same-origin",
-    "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36",
-    "x-bcp": "b288dadf-5f18-478d-8ebd-fd356f175ffe",
     "x-newrelic-id": "VgUFVldbGwsFU1BRDwUBVw==",
     "x-requested-with": "XMLHttpRequest",
 }
@@ -71,9 +72,15 @@ def get_data(
     scheme, host, path, *_ = urlsplit(url)
     request_url = f"{scheme}://{host}{path}/projects?offset={offset}"
     cookie_value = _build_cookie(cookies)
+    headers = {
+        "referer": url,
+        "cookie": cookie_value,
+        'user-agent': user_agent.get_random_user_agent()
+    }
+    headers = default_headers | headers
     response = requests.get(
         url=request_url,
-        headers={"referer": url, "cookie": cookie_value} | default_headers,
+        headers=headers,
         verify=False,
     )
     response_data = response.json()
@@ -81,3 +88,14 @@ def get_data(
     if work := parsed_response.profile.active_section.work:
         return work.projects, work.has_more
     return [], False
+
+
+def load_img(url: str, cookies: list[dict]) -> bytes:
+    cookie_value = _build_cookie(cookies)
+    headers = {
+        "referer": "https://www.behance.net/",
+        "cookie": cookie_value,
+        "user-agent": user_agent.get_random_user_agent()
+    }
+    response = requests.get(url, headers=headers)
+    return response.content

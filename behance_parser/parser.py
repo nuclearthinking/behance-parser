@@ -7,30 +7,32 @@ from selenium.webdriver.chromium.webdriver import ChromiumDriver
 from webdriver_manager.chrome import ChromeDriverManager
 
 from behance_parser import fetcher, storage
-from behance_parser.storage import get_all_agencies
-
-logging.basicConfig(
-    level=logging.DEBUG,
-)
 
 service = Service(executable_path=ChromeDriverManager().install())
+logger = logging.getLogger(__name__)
 
 
-def get_driver() -> ChromiumDriver:
-    return webdriver.Chrome(service=service)
+def get_driver():
+    driver = webdriver.Chrome(service=service)
+    yield driver
+    driver.quit()
 
 
 behance_url = "https://www.behance.net/"
-driver = get_driver()
+cookies: list[dict] = []
 
 
 def get_page_cookies(url: str) -> list[dict[str, str]]:
+    driver = get_driver()
     driver.get(url)
     return driver.get_cookies()
 
 
 def _do(
-    url: str, offset: int, cookies: list[dict[str, str]], agency_name: str
+    url: str,
+    offset: int,
+    cookies: list[dict[str, str]],
+    agency_name: str,
 ) -> tuple[bool, int]:
     projects, has_more = fetcher.get_data(
         url=url,
@@ -63,6 +65,6 @@ def parse_agency(agency_name: str) -> None:
 
 
 def collect_tasks_for_parsing():
-    agencies = get_all_agencies()
+    agencies = storage.get_all_agencies()
     for agency in agencies:
         parse_agency(agency.name)
