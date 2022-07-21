@@ -35,7 +35,7 @@ def _export_images(images: list[storage.Image], path: Path) -> None:
     images_folder = path / "images"
     images_folder.mkdir(exist_ok=True)
     for image in images:
-        file_path = images_folder / f"{image.uuid}.jpg"
+        file_path = images_folder / image.uuid
         if file_path.exists():
             continue
         with open(str(file_path), "wb") as _img_file:

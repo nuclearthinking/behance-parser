@@ -1,9 +1,13 @@
+import logging
 from urllib.parse import urlsplit
 
 import requests
 from pydantic import BaseModel
 
+from behance_parser.exceptions import ParsingException
 from behance_parser.fake_useragent import user_agent
+
+logger = logging.getLogger(__name__)
 
 
 def to_lower_camel_case(string: str) -> str:
@@ -96,5 +100,10 @@ def load_img(url: str, cookies: list[dict]) -> bytes:
         "cookie": cookie_value,
         "user-agent": user_agent.get_random_user_agent(),
     }
-    response = requests.get(url, headers=headers)
+    try:
+        response = requests.get(url, headers=headers)
+    except requests.exceptions.RequestException as exc:
+        logging.exception('Error while downloading image for url %s', url)
+        raise ParsingException('Cant download image') from exc
+
     return response.content

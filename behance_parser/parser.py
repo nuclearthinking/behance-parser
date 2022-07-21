@@ -10,11 +10,14 @@ from behance_parser import fetcher, storage
 service = Service(executable_path=ChromeDriverManager().install())
 logger = logging.getLogger(__name__)
 
+_driver = None
+
 
 def get_driver():
-    driver = webdriver.Chrome(service=service)
-    yield driver
-    driver.quit()
+    global _driver
+    if not _driver:
+        _driver = webdriver.Chrome(service=service)
+    return _driver
 
 
 behance_url = "https://www.behance.net/"

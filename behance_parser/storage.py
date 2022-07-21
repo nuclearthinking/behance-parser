@@ -32,6 +32,7 @@ class Task(Base):
     name: str = sa.Column(sa.Text, nullable=False)
     url: str = sa.Column(sa.Text, nullable=False)
     is_parsed: bool = sa.Column(sa.Boolean, default=False)
+    error: bool = sa.Column(sa.Boolean, default=None)
 
 
 class Text(Base):
@@ -194,6 +195,12 @@ def set_task_parsing_status(task: Task, is_parsed: bool) -> None:
     db_session.commit()
 
 
+def set_task_error_status(task: Task, is_error: bool) -> None:
+    task.error = is_error
+    db_session.add(task)
+    db_session.commit()
+
+
 def get_tasks_by_agency_id(agency_id: int) -> list[Task]:
     query = sa.select(Task).where(
         sa.and_(Task.agency_id == agency_id, Task.is_parsed.is_(True))
@@ -202,7 +209,10 @@ def get_tasks_by_agency_id(agency_id: int) -> list[Task]:
 
 
 def get_next_tasks_for_parsing(limit: int = 10) -> list[Task]:
-    query = sa.select(Task).where(Task.is_parsed.is_(False)).limit(limit)
+    query = sa.select(Task).where(sa.and_(
+        Task.is_parsed.is_(False),
+        Task.error.isnot(True),
+    )).limit(limit)
     return db_session.execute(query).scalars().all()
 
 
