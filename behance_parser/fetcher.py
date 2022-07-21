@@ -103,7 +103,7 @@ def load_img(url: str, cookies: list[dict]) -> bytes:
     try:
         response = requests.get(url, headers=headers)
     except requests.exceptions.RequestException as exc:
-        logging.exception('Error while downloading image for url %s', url)
-        raise ParsingException('Cant download image') from exc
+        logging.exception("Error while downloading image for url %s", url)
+        raise ParsingException("Cant download image") from exc
 
     return response.content

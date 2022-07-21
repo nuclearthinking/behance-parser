@@ -209,10 +209,16 @@ def get_tasks_by_agency_id(agency_id: int) -> list[Task]:
 
 
 def get_next_tasks_for_parsing(limit: int = 10) -> list[Task]:
-    query = sa.select(Task).where(sa.and_(
-        Task.is_parsed.is_(False),
-        Task.error.isnot(True),
-    )).limit(limit)
+    query = (
+        sa.select(Task)
+        .where(
+            sa.and_(
+                Task.is_parsed.is_(False),
+                Task.error.isnot(True),
+            )
+        )
+        .limit(limit)
+    )
     return db_session.execute(query).scalars().all()
 
 
