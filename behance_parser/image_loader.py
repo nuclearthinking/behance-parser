@@ -50,6 +50,13 @@ async def _load_images_async(urls: list[str]) -> dict[str, bytes]:
         task.cancel()
     await asyncio.gather(*tasks, return_exceptions=True)
 
+    result_dict = dict()
+    while not result.empty():
+        file_name, file_data = result.get_nowait()
+        result_dict[file_name] = file_data
+
+    return result_dict
+
 
 def load_images(urls: list[str], cookies: list[dict]) -> dict[str, bytes]:
     global _cookies

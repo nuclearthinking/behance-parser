@@ -8,7 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
 
-from behance_parser import fetcher, parser, storage
+from behance_parser import fetcher, parser, storage, image_loader
 from behance_parser.exceptions import ParsingException
 
 logger = logging.getLogger(__name__)
@@ -62,6 +62,30 @@ def _parse_image(tag: Tag, task: storage.Task) -> None:
             task=task,
         )
         logger.info("Stored image with uuid: %s", file_name)
+
+
+def _extract_image_urls(tag: Tag) -> list[str]:
+    images = tag.select(IMG_SELECTOR)
+    urls = []
+    for img in images:
+        srcset = img.attrs.get("srcset")
+        sizes = srcset.split(",")
+        sizes = [i for i in sizes if i]
+        higher_size_img_url = sizes[-1].strip().split(" ")[0]
+        urls.append(higher_size_img_url)
+    return urls
+
+
+def _extract_slider_urls(tag: Tag) -> list[str]:
+    urls = []
+    slider = tag.select_one(SLIDER_SELECTOR)
+    for slider_content in slider.contents:
+        if isinstance(slider_content, bs4.element.Script):
+            slider_content = bs4.BeautifulSoup(slider_content, "html.parser")
+        image = slider_content.select_one(IMG_SELECTOR)
+        if image:
+            urls.extend(_extract_image_urls(slider_content))
+    return urls
 
 
 def _parse_text(tag: Tag, task: storage.Task) -> None:
@@ -127,11 +151,13 @@ def parse_project(task: storage.Task) -> None:
         return
     content = [i for i in content if isinstance(i, Tag)]
     logger.info("Found %s items", len(content))
+    urls = []
     for tag in content:
         try:
             image = tag.select_one(IMG_SELECTOR)
             if image:
-                _parse_image(tag, task)
+                urls.extend(_extract_image_urls(tag))
+                # _parse_image(tag, task)
                 continue
             text = tag.select_one(TEXT_SELECTOR)
             if text:
@@ -145,7 +171,8 @@ def parse_project(task: storage.Task) -> None:
                 continue
             slider = tag.select_one(SLIDER_SELECTOR)
             if slider:
-                _parse_slider(tag, task)
+                urls.extend(_extract_slider_urls(tag))
+                # _parse_slider(tag, task)
                 continue
             if _is_pointless_element(tag):
                 logger.info("Pointless element found, skip")
@@ -157,6 +184,12 @@ def parse_project(task: storage.Task) -> None:
             logger.warning("Error while parsing tag %s", tag.prettify())
             storage.set_task_error_status(task, is_error=True)
             return
+    images = image_loader.load_images(urls, cookies)
+    for file_name, file_data in images.items():
+        if storage.is_image_exist(file_name, task.id):
+            continue
+        storage.store_image(file_name, file_data, task)
+        logger.info("Stored image with uuid: %s", file_name)
     storage.set_task_parsing_status(task, is_parsed=True)
     logger.info("Completed processing for project: %s", task.id)
 
