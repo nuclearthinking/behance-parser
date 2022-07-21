@@ -4,68 +4,61 @@ import aiohttp
 
 from behance_parser.fake_useragent import user_agent
 
-_cookies: list[dict] | None = None
 
+class ImagesLoader:
+    def __init__(self, urls: list[str], cookies: list[dict], threads: int = 5) -> None:
+        self._threads = threads
+        self._urls = urls
+        self._cookies = self._build_cookies(cookies)
+        self._tmp_result = asyncio.Queue()
+        self._tasks = asyncio.Queue()
+        self._results = dict()
+        for url in urls:
+            self._tasks.put_nowait(url)
 
-def _build_cookie(cookies: list[dict]) -> str:
-    _cookie = [f'{i["name"]}={i["value"]}' for i in cookies]
-    return "; ".join(_cookie)
+    @staticmethod
+    def _build_cookies(cookies: list[dict]):
+        cookies_list = [f'{i["name"]}={i["value"]}' for i in cookies]
+        return "; ".join(cookies_list)
 
+    async def _load_image(self, url: str) -> bytes:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                url=url,
+                headers={
+                    "user-agent": user_agent.get_random_user_agent(),
+                    "cookies": self._cookies,
+                },
+            ) as response:
+                data = await response.read()
+                return data
 
-async def _load_image(url: str) -> bytes:
-    async with aiohttp.ClientSession() as session:
-        async with session.get(
-            url=url,
-            headers={
-                "user-agent": user_agent.get_random_user_agent(),
-                "cookies": _build_cookie(cookies=_cookies),
-            },
-        ) as response:
-            data = await response.read()
-            return data
-
-
-async def _load_images_async(urls: list[str]) -> dict[str, bytes]:
-    queue = asyncio.Queue()
-    result = asyncio.Queue()
-
-    for url in urls:
-        queue.put_nowait(url)
-
-    async def consumer():
+    async def _consumer(self):
         while True:
-            url = await queue.get()
-            file_data = await _load_image(url)
+            url = await self._tasks.get()
+            file_data = await self._load_image(url)
             file_name = url.split("/")[-1]
-            result.put_nowait((file_name, file_data))
-            queue.task_done()
+            self._tmp_result.put_nowait((file_name, file_data))
+            self._tasks.task_done()
 
-    tasks = []
-    for i in range(5):
-        task = asyncio.create_task(consumer())
-        tasks.append(task)
+    async def _process(self):
+        tasks = []
+        for i in range(self._threads):
+            task = asyncio.create_task(self._consumer())
+            tasks.append(task)
 
-    await queue.join()
-    for task in tasks:
-        task.cancel()
-    await asyncio.gather(*tasks, return_exceptions=True)
+        await self._tasks.join()
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
 
-    result_dict = dict()
-    while not result.empty():
-        file_name, file_data = result.get_nowait()
-        result_dict[file_name] = file_data
+    def _get_results(self) -> dict[str, bytes]:
+        res = dict()
+        while not self._tmp_result.empty():
+            file_name, file_data = self._tmp_result.get_nowait()
+            res[file_name] = file_data
+        return res
 
-    return result_dict
-
-
-def load_images(urls: list[str], cookies: list[dict]) -> dict[str, bytes]:
-    global _cookies
-    _cookies = cookies
-    result: dict[str, bytes] | None = None
-
-    async def main():
-        nonlocal result
-        result = await _load_images_async(urls)
-
-    asyncio.run(main())
-    return result
+    def load(self) -> dict[str, bytes]:
+        asyncio.run(self._process())
+        return self._get_results()

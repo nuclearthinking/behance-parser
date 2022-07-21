@@ -8,7 +8,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
 
-from behance_parser import fetcher, parser, storage, image_loader
+from behance_parser import fetcher, image_loader, parser, storage
 from behance_parser.exceptions import ParsingException
 
 logger = logging.getLogger(__name__)
@@ -61,7 +61,6 @@ def _parse_image(tag: Tag, task: storage.Task) -> None:
             data=img_data,
             task=task,
         )
-        logger.info("Stored image with uuid: %s", file_name)
 
 
 def _extract_image_urls(tag: Tag) -> list[str]:
@@ -103,7 +102,6 @@ def _parse_text(tag: Tag, task: storage.Task) -> None:
         text=result,
         task=task,
     )
-    logger.info("Stored text with uuid: %s", uuid)
 
 
 def _parse_video(tag: Tag, task: storage.Task) -> None:
@@ -184,12 +182,9 @@ def parse_project(task: storage.Task) -> None:
             logger.warning("Error while parsing tag %s", tag.prettify())
             storage.set_task_error_status(task, is_error=True)
             return
-    images = image_loader.load_images(urls, cookies)
+    images = image_loader.ImagesLoader(urls, cookies).load()
     for file_name, file_data in images.items():
-        if storage.is_image_exist(file_name, task.id):
-            continue
         storage.store_image(file_name, file_data, task)
-        logger.info("Stored image with uuid: %s", file_name)
     storage.set_task_parsing_status(task, is_parsed=True)
     logger.info("Completed processing for project: %s", task.id)
 

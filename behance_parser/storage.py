@@ -137,6 +137,7 @@ def store_image(uuid: str, data: bytes, task: Task) -> None:
     )
     db_session.add(img)
     db_session.commit()
+    logger.info("Stored image with uuid: %s", uuid)
 
 
 def is_image_exist(uuid: str, task_id: int) -> bool:
@@ -171,6 +172,7 @@ def store_text(uuid: str, text: str, task: Task) -> None:
     )
     db_session.add(text_model)
     db_session.commit()
+    logger.info("Stored text with uuid: %s", uuid)
 
 
 def is_video_exist(uuid: str, task_id: int) -> bool:
