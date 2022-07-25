@@ -17,7 +17,7 @@ class ImagesLoader:
             self._tasks.put_nowait(url)
 
     @staticmethod
-    def _build_cookies(cookies: list[dict]):
+    def _build_cookies(cookies: list[dict[str, str]]):
         cookies_list = [f'{i["name"]}={i["value"]}' for i in cookies]
         return "; ".join(cookies_list)
 

@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 
@@ -26,9 +27,13 @@ def _export_project_data(project: storage.Task, path: Path) -> None:
     images = storage.get_task_images(project.id)
     _export_images(images, project_folder)
     texts = storage.get_task_texts(project.id)
-    _export_texts(texts, project_folder)
     videos = storage.get_task_videos(project.id)
-    _export_videos(videos, project_folder)
+    _export_data(
+        project=project,
+        videos=videos,
+        texts=texts,
+        path=project_folder,
+    )
 
 
 def _export_images(images: list[storage.Image], path: Path) -> None:
@@ -42,24 +47,20 @@ def _export_images(images: list[storage.Image], path: Path) -> None:
             _img_file.write(image.image)
 
 
-def _export_texts(texts: list[storage.Text], path: Path) -> None:
-    file_path = path / "texts.txt"
-    if file_path.exists():
-        os.remove(file_path)
-    content = [i.text for i in texts]
-    content = "\n".join(content)
-    with open(file_path, "w") as _text_file:
-        _text_file.write(content)
-
-
-def _export_videos(videos: list[storage.Video], path: Path) -> None:
-    file_path = path / "videos.txt"
-    if file_path.exists():
-        os.remove(file_path)
-    links = [i.link for i in videos]
-    links = "\n".join(links)
-    with open(file_path, "w") as _links_file:
-        _links_file.write(links)
+def _export_data(project: storage.Task, videos: list[storage.Video], texts: list[storage.Text], path: Path) -> None:
+    data_file_path = path / 'data.json'
+    text_data = [i.text for i in texts]
+    video_data = [i.link for i in videos]
+    data = dict(
+        name=project.name,
+        id=project.behance_id,
+        url=project.url,
+        agency=project.agency.name,
+        text=text_data,
+        videos=video_data,
+    )
+    with open(data_file_path, 'w') as data_file:
+        data_file.write(json.dumps(data, indent=4))
 
 
 def _generate_exporting_path(path) -> Path:
